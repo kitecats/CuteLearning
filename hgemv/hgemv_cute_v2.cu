@@ -83,8 +83,7 @@ __global__ void hgemv_tensor_core_cute_kernel(typename HgemvConfig_::T *Aptr,
     auto tArA = make_tensor_like(tAgA(_, _, _, 0));
     auto tBrB = make_tensor_like(tBgB(_, _, _, 0));
 
-    // auto tArA = thr_mma.partition_fragment_A(gA(_, _, 0));
-    // auto tBrB = thr_mma.partition_fragment_B(gB(_, _, 0));
+
     auto tCrC = partition_fragment_C(tiled_mma, Shape<Int<BlockM>, Int<BlockN>>{});
 
 
@@ -94,8 +93,6 @@ __global__ void hgemv_tensor_core_cute_kernel(typename HgemvConfig_::T *Aptr,
 #pragma unroll
     for(int itile = 0; itile < num_tile_k; itile++)
     {
-        // copy(tAgA(_, _, _, itile), tArA);
-        // copy(tBgB(_, _, _, itile), tBrB);
 
         auto pre_A = rAPre(_, _, _, itile);
         auto pre_B = rBPre(_, _, _, itile);
@@ -107,12 +104,6 @@ __global__ void hgemv_tensor_core_cute_kernel(typename HgemvConfig_::T *Aptr,
 
         gemm(tiled_mma, tArA, tBrB, tCrC);
     }
-
-    // if(laneid % 4 ==0)
-    // {
-    //     Cptr[blockid * BlockM + warpid * 16 + laneid / 4] = tCrC(0);
-    //     Cptr[blockid * BlockM + warpid * 16 + laneid / 4 + 8] = tCrC(2);
-    // }
 
     int elem_index1 = warpid * 16 + laneid / 4;
     int elem_index2 = warpid * 16 + laneid / 4 + 8;
